@@ -155,6 +155,7 @@ class SyntheticPairDataset (PairDataset):
         scaled_and_distorted_image = self.distort(
             dict(img=scaled_image2, persp=(1,0,0,0,1,0,0,0))) # in our case: 'RandomTilting(0.5), PixelNoise(25)'
         W, H = scaled_image.size
+
         # H matrix -> the transform from tilting!
         # only 8 params, -> the w = H(3,3) will be addedr as 1
         trf = scaled_and_distorted_image['persp']
@@ -184,7 +185,7 @@ class SyntheticPairDataset (PairDataset):
             # compute optical flow
             xy = np.mgrid[0:H,0:W][::-1].reshape(2,H*W).T # get grid of image size, and then reshape (init with random val ?) ->
 
-            # get the optical flow in the image size (corespondence) -> has to be as points given!
+            # get the optical flow in the image size (correspondence) -> has to be as points given!
             aflow = np.float32(persp_apply(trf, xy).reshape(H,W,2))
             meta['flow'] = aflow - xy.reshape(H,W,2) # abstract the random xy values?
             meta['aflow'] = aflow

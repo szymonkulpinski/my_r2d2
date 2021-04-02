@@ -106,14 +106,17 @@ if __name__ == '__main__':
     db_eval_text = args.data_loader.replace('`data`',','.join(db)).replace('\n', '')
     # db_loader = eval(db_eval_text)
     # db_loader = eval(args.data_loader.replace('`data`',','.join(db_loader)).replace('\n',''))
+
     # replace db_loader with it's config for webimages! -> not interested in other ways anyhow... -> other config changes won't work
+    # images randomly scaled to 256,1024
+    # -> but those are the min and max dim of the of the smaller edge of the picture! not the whole dimenstions!
     dataset = CatPairDataset(SyntheticPairDataset(web_images, 'RandomScale(256,1024,can_upscale=True)',
                                                    'RandomTilting(0.5), PixelNoise(25)'))
     db_loader = PairLoader(dataset,
                            scale='RandomScale(256,1024,can_upscale=True)',
                            distort='ColorJitter(0.2,0.2,0.2,0.1)',
-                           crop='RandomCrop(192)')
-    # print( "dbs are equal " + str(db_loader==db_2)) # it's not, for whatever reason.
+                           crop='RandomCrop(192)') # cropped to 192x192 -> this way batch size
+
     print("Training image database =", db_loader)
     loader = threaded_loader(db_loader, iscuda, args.threads, args.batch_size, shuffle=True)
 
