@@ -103,7 +103,15 @@ if __name__ == '__main__':
     # Create data loader
     from datasets import *
     db = [data_sources[key] for key in args.train_data]
-    db = eval(args.data_loader.replace('`data`',','.join(db)).replace('\n',''))
+    db_eval_text = args.data_loader.replace('`data`',','.join(db)).replace('\n','')
+    # db = eval(db_eval_text)
+    # db = eval(args.data_loader.replace('`data`',','.join(db)).replace('\n',''))
+    # replace db with it's config for webimages! -> not interested in other ways anyhow... -> other config changes won't work
+    db = PairLoader(CatPairDataset(SyntheticPairDataset(web_images, 'RandomScale(256,1024,can_upscale=True)',
+                                                   'RandomTilting(0.5), PixelNoise(25)')),
+               scale='RandomScale(256,1024,can_upscale=True)', distort='ColorJitter(0.2,0.2,0.2,0.1)',
+               crop='RandomCrop(192)')
+    # print( "dbs are equal " + str(db==db_2)) # it's not, for whatever reason.
     print("Training image database =", db)
     loader = threaded_loader(db, iscuda, args.threads, args.batch_size, shuffle=True)
 
