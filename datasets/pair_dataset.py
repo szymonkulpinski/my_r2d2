@@ -123,7 +123,9 @@ class SyntheticPairDataset (PairDataset):
     # The lowest lvl of init.
     def __init__(self, dataset, scale='', distort=''):
         self.attach_dataset(dataset)
-        self.distort = instanciate_transformation(distort)
+
+        # get transformation objects
+        self.distort = instanciate_transformation(distort) # in our case: 'RandomTilting(0.5), PixelNoise(25)'
         self.scale = instanciate_transformation(scale)
 
     def attach_dataset(self, dataset):
@@ -141,7 +143,7 @@ class SyntheticPairDataset (PairDataset):
     def get_pair(self, i, output=('aflow')):
         """ Procedure:
         This function applies a series of random transformations to one original image 
-        to form a synthetic image pairs with perfect ground-truth.
+        to form a synthetic image pairs with perfect ground-truth (from optical flow).
         """
         if isinstance(output, str): 
             output = output.split()
@@ -151,16 +153,40 @@ class SyntheticPairDataset (PairDataset):
         scaled_image = self.scale(original_img)
         scaled_image, scaled_image2 = self.make_pair(scaled_image)
         scaled_and_distorted_image = self.distort(
-            dict(img=scaled_image2, persp=(1,0,0,0,1,0,0,0)))
+            dict(img=scaled_image2, persp=(1,0,0,0,1,0,0,0))) # in our case: 'RandomTilting(0.5), PixelNoise(25)'
         W, H = scaled_image.size
+        # H matrix -> the transform from tilting!
+        # only 8 params, -> the w = H(3,3) will be addedr as 1
         trf = scaled_and_distorted_image['persp']
 
+        import numpy as np
+        def PIL2CV(image):
+            open_cv_image = np.array(image)
+            # Convert RGB to BGR
+            open_cv_image = open_cv_image[:, :, ::-1].copy()
+            return open_cv_image
+
+        scaled_cv = PIL2CV(scaled_image)
+        scaled_cv_dist = PIL2CV(scaled_and_distorted_image['img'])
+
+        # cv2.imshow('scaled_image', PIL2CV(scaled_image))
+        # cv2.waitKey(0)
+        # cv2.imshow('scaled_and_distorted_image', PIL2CV(scaled_and_distorted_image['img']))
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
+
         meta = dict()
-        if 'aflow' in output or 'flow' in output:
+
+        # aflow contains pixel coordinates indicating where each
+        # pixel from the left image ended up in the right image
+        # as (x,y) pairs, but its shape is (H,W,2)
+        if 'aflow' in output or 'flow' in output: # TODO: understand what is happneing here...
             # compute optical flow
-            xy = np.mgrid[0:H,0:W][::-1].reshape(2,H*W).T
+            xy = np.mgrid[0:H,0:W][::-1].reshape(2,H*W).T # get grid of image size, and then reshape (init with random val ?) ->
+
+            # get the optical flow in the image size (corespondence) -> has to be as points given!
             aflow = np.float32(persp_apply(trf, xy).reshape(H,W,2))
-            meta['flow'] = aflow - xy.reshape(H,W,2)
+            meta['flow'] = aflow - xy.reshape(H,W,2) # abstract the random xy values?
             meta['aflow'] = aflow
         
         if 'homography' in output:
@@ -210,6 +236,9 @@ class TransformedPairs (PairDataset):
         img_b = self.trf({'img': img_b_, 'persp':(1,0,0,0,1,0,0,0)})
         trf = img_b['persp']
 
+        # aflow contains pixel coordinates indicating where each
+        # pixel from the left image ended up in the right image
+        # as (x,y) pairs, but its shape is (H,W,2)
         if 'aflow' in metadata or 'flow' in metadata:
             aflow = metadata['aflow']
             aflow[:] = persp_apply(trf, aflow.reshape(-1,2)).reshape(aflow.shape)

@@ -108,6 +108,7 @@ def persp_mul(mat, mat2):
 def persp_apply(mat, pts):
     ''' homography (perspective) transformation.
     mat: 8-tuple (homography transform)
+    -> adds the w = H(3,3) parameter as 1, therefore only 8 parameters necessary
     pts: numpy array
     '''
     assert isinstance(mat, tuple)
