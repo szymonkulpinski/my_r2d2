@@ -13,7 +13,7 @@ from .pair_dataset import PairDataset, StillPairDataset
 class AachenImages (Dataset):
     """ Loads all images from the Aachen Day-Night dataset 
     """
-    def __init__(self, select='db day night', root='data/aachen'):
+    def __init__(self, select='db_loader day night', root='data/aachen'):
         Dataset.__init__(self)
         self.root = root
         self.img_dir = 'images_upright'
@@ -36,10 +36,10 @@ class AachenImages (Dataset):
 
 
 class AachenImages_DB (AachenImages):
-    """ Only database (db) images.
+    """ Only database (db_loader) images.
     """
     def __init__(self, **kw):
-        AachenImages.__init__(self, select='db', **kw)
+        AachenImages.__init__(self, select='db_loader', **kw)
         self.db_image_idxs = {self.get_tag(i) : i for i,f in enumerate(self.imgs)}
     
     def get_tag(self, idx): 
@@ -75,7 +75,7 @@ class AachenPairs_StyleTransferDayNight (AachenImages_DB, StillPairDataset):
 
 
 class AachenPairs_OpticalFlow (AachenImages_DB, PairDataset):
-    """ Image pairs from Aachen db with optical flow.
+    """ Image pairs from Aachen db_loader with optical flow.
     """
     def __init__(self, root='data/aachen/optical_flow', **kw):
         PairDataset.__init__(self)

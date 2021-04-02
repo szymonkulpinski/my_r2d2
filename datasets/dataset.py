@@ -41,15 +41,16 @@ class Dataset(object):
 
 
 class CatDataset (Dataset):
-    ''' Concatenation of several datasets.
+    ''' Concatenation (POLACZENIE, powiazanie, zwiazek, lancuch) of several datasets.
+basically used to connect aachen datasets with web dataset
     '''
-    def __init__(self, *datasets):
+    def __init__(self, *datasets): # somehow combines the datasets using oggsets.
         assert len(datasets) >= 1
         self.datasets = datasets
         offsets = [0]
         for db in datasets:
             offsets.append(db.nimg)
-        self.offsets = np.cumsum(offsets)
+        self.offsets = np.cumsum(offsets) # IRRELEVANT for us as we only train on the webdataset
         self.nimg = self.offsets[-1]
         self.root = None
 

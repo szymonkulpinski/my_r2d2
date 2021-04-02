@@ -120,6 +120,7 @@ class SyntheticPairDataset (PairDataset):
     """ A synthetic generator of image pairs.
         Given a normal image dataset, it constructs pairs using random homographies & noise.
     """
+    # The lowest lvl of init.
     def __init__(self, dataset, scale='', distort=''):
         self.attach_dataset(dataset)
         self.distort = instanciate_transformation(distort)
@@ -166,7 +167,10 @@ class SyntheticPairDataset (PairDataset):
             meta['homography'] = np.float32(trf+(1,)).reshape(3,3)
 
         return scaled_image, scaled_and_distorted_image['img'], meta
-    
+
+    #__str__() is more human friendly whereas __repr__() is more information rich and machine friendly
+    # and can be used to reconstruct the object.
+    # In fact, we can use repr() function with eval() to construct the object. source: https://www.journaldev.com/22460/python-str-repr-functions
     def __repr__(self):
         res =  'Dataset: %s\n' % self.__class__.__name__
         res += '  %d images and pairs' % self.npairs
@@ -235,7 +239,8 @@ class TransformedPairs (PairDataset):
 
 
 class CatPairDataset (CatDataset):
-    ''' Concatenation of several pair datasets.
+    ''' Concatenation (POLACZENIE, powiazanie, zwiazek, lancuch) of several PAIR datasets.
+basically used to connect aachen datasets with web dataset
     '''
     def __init__(self, *datasets):
         CatDataset.__init__(self, *datasets)
@@ -243,7 +248,7 @@ class CatPairDataset (CatDataset):
         for db in datasets:
             pair_offsets.append(db.npairs)
         self.pair_offsets = np.cumsum(pair_offsets)
-        self.npairs = self.pair_offsets[-1]
+        self.npairs = self.pair_offsets[-1] # number of image pairs = number of images in dataset!
 
     def __len__(self):
         return self.npairs
@@ -260,6 +265,7 @@ class CatPairDataset (CatDataset):
         return pos, i - self.pair_offsets[pos]
 
     def pair_call(self, func, i, *args, **kwargs):
+        'Applies function to give index pair'
         b, j = self.pair_which(i)
         return getattr(self.datasets[b], func)(j, *args, **kwargs)
 
