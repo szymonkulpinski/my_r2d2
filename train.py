@@ -74,7 +74,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser("Train R2D2")
 
     parser.add_argument("--data-loader", type=str, default=default_dataloader)
-    parser.add_argument("--train-data", type=str, default=list('WASF'), nargs='+', 
+    # parser.add_argument("--train-data", type=str, default=list('WASF'), nargs='+',
+    #     choices = set(data_sources.keys()))
+    parser.add_argument("--train-data", type=str, default=list('W'), nargs='+',
         choices = set(data_sources.keys()))
     parser.add_argument("--net", type=str, default=default_net, help='network architecture')
 
