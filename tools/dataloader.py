@@ -74,7 +74,7 @@ class PairLoader:
         # as (x,y) pairs, but its shape is (H,W,2)
         aflow = np.float32(metadata['aflow'])
         mask = metadata.get('mask', np.ones(aflow.shape[:2],np.uint8))
-
+        # UNDERSTAND: what is happening from this point
         # apply transformations to the second image
         img_b = {'img': img_b, 'persp':(1,0,0,0,1,0,0,0)}
         if self.scale:

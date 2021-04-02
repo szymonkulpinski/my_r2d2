@@ -184,7 +184,7 @@ class SyntheticPairDataset (PairDataset):
         if 'aflow' in output or 'flow' in output: # TODO: understand what is happneing here...
             # compute optical flow
             xy = np.mgrid[0:H,0:W][::-1].reshape(2,H*W).T # get grid of image size, and then reshape (init with random val ?) ->
-
+            # UNDERSTAND: rewrite this to understand how grid initialized and what's the difference betwen aflow and flow
             # get the optical flow in the image size (correspondence) -> has to be as points given!
             aflow = np.float32(persp_apply(trf, xy).reshape(H,W,2))
             meta['flow'] = aflow - xy.reshape(H,W,2) # abstract the random xy values?
