@@ -77,11 +77,23 @@ class PairLoader:
         # UNDERSTAND: what is happening from this point
         # apply transformations to the second image
         img_b = {'img': img_b, 'persp':(1,0,0,0,1,0,0,0)}
+        img_b_prior = np.copy(img_b['img'])
         if self.scale:
-            img_b = self.scale(img_b)
+            img_b = self.scale(img_b) # 'RandomScale(256,1024,can_upscale=True)',
         if self.distort:
-            img_b = self.distort(img_b)
-        
+            img_b = self.distort(img_b) #'ColorJitter(0.2,0.2,0.2,0.1)'
+
+        # import numpy as np
+        def PIL2CV(image):
+            open_cv_image = np.array(image)
+            # Convert RGB to BGR
+            open_cv_image = open_cv_image[:, :, ::-1].copy()
+            return open_cv_image
+
+        # img_b_prior_cv = PIL2CV(img_b_prior)
+        # img_b_cv_dist = PIL2CV(img_b['img'])
+        # img_a_cv = PIL2CV(img_a)
+
         # apply the same transformation to the flow
         aflow[:] = persp_apply(img_b['persp'], aflow.reshape(-1,2)).reshape(aflow.shape)
         corres = None
@@ -112,8 +124,11 @@ class PairLoader:
         assert aflow.shape == (ah, aw, 2)
         assert mask.shape == (ah, aw)
 
+        # UNDERSTAND: as I understood it, from this point they search for a best window to crop the image, based on some score! -> copy this!
+
         # Let's start by computing the scale of the
         # optical flow and applying a median filter:
+        # UNDERSTAND: the image size of image 1 and 2 changes so it has to change as well? -> we look at the opt flow for 1 anyway!
         dx = np.gradient(aflow[:,:,0])
         dy = np.gradient(aflow[:,:,1])
         scale = np.sqrt(np.clip(np.abs(dx[1]*dy[0] - dx[0]*dy[1]), 1e-16, 1e16))
@@ -157,7 +172,7 @@ class PairLoader:
             # Get the flow scale
             sigma = scale[c1y, c1x]
 
-            # Determine sampling windows
+            # Determine sampling windows -> according to crop image size!
             if 0.2 < sigma < 1: 
                 win1 = window(c1x, c1y, output_size_a, 1/sigma, img_a.shape)
                 win2 = window(c2x, c2y, output_size_b, 1, img_b.shape)
@@ -183,7 +198,7 @@ class PairLoader:
             trials += 1
             if score > best[0]:
                 best = score, win1, win2
-        
+        # get return values:
         if None in best: # counldn't find a good window
             img_a = np.zeros(output_size_a[::-1]+(3,), dtype=np.uint8)
             img_b = np.zeros(output_size_b[::-1]+(3,), dtype=np.uint8)
@@ -192,9 +207,9 @@ class PairLoader:
 
         else:
             win1, win2 = best[1:]
-            img_a = img_a[win1]
+            img_a = img_a[win1]  # window has two slices -> one for x, one for y direction,
             img_b = img_b[win2]
-            aflow = aflow[win1] - np.float32([[[win2[1].start, win2[0].start]]])
+            aflow = aflow[win1] - np.float32([[[win2[1].start, win2[0].start]]]) # get flow and abstract to be right again
             mask = mask[win1]
             aflow[~mask.view(bool)] = np.nan # mask bad pixels!
             aflow = aflow.transpose(2,0,1) # --> (2,H,W)
@@ -211,7 +226,7 @@ class PairLoader:
                 homography = trans2 @ homography @ trans1
                 homography /= homography[2,2]
             
-            # rescale if necessary
+            # rescale if necessary -> might be that due to rescailing wrong size(?)
             if img_a.shape[:2][::-1] != output_size_a:
                 sx, sy = (np.float32(output_size_a)-1)/(np.float32(img_a.shape[:2][::-1])-1)
                 img_a = np.asarray(Image.fromarray(img_a).resize(output_size_a, Image.ANTIALIAS))
@@ -245,9 +260,9 @@ class PairLoader:
             H, W = img_a.shape[:2]
             mgrid = np.mgrid[0:H, 0:W][::-1].astype(np.float32)
             flow = aflow - mgrid
-        
-        result = dict(img1=self.norm(img_a), img2=self.norm(img_b))
-        for what in self.what:
+
+        result = dict(img1=self.norm(img_a), img2=self.norm(img_b)) # TODO: do I also need norm?
+        for what in self.what: # add aflow and mask into results: TODO: change this
             try: result[what] = eval(what)
             except NameError: pass
         return result
