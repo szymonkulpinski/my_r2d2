@@ -183,8 +183,20 @@ class SyntheticPairDataset (PairDataset):
         # as (x,y) pairs, but its shape is (H,W,2)
         if 'aflow' in output or 'flow' in output: # TODO: understand what is happneing here...
             # compute optical flow
-            xy = np.mgrid[0:H,0:W][::-1].reshape(2,H*W).T # get grid of image size, and then reshape (init with random val ?) ->
+            # xy = np.mgrid[0:H,0:W][::-1].reshape(2,H*W).T # get grid of image size, and then reshape (init with random val ?) ->
             # UNDERSTAND: rewrite this to understand how grid initialized and what's the difference betwen aflow and flow
+
+            xy = np.mgrid[0:H, 0:W] # grid which is value is the value of its row
+            xy = xy[::-1] # now describes  xy2[0] columns(x), xy2[1]  rows(y)
+            xy = xy.reshape(2,H*W).T # reshaped as points
+
+            # comparison = xy2 == xy
+            # equal_arrays = comparison.all()
+            # print(equal_arrays)
+
+            # if xy2 == xy:
+            #     print("xy are the same")
+
             # get the optical flow in the image size (correspondence) -> has to be as points given!
             aflow = np.float32(persp_apply(trf, xy).reshape(H,W,2))
             meta['flow'] = aflow - xy.reshape(H,W,2) # abstract the random xy values?
