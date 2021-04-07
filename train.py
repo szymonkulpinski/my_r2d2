@@ -122,7 +122,8 @@ if __name__ == '__main__':
 
     # create network
     print("\n>> Creating net = " + args.net) 
-    net = eval(args.net)
+    # net = eval(args.net)
+    net = Quad_L2Net_ConfCFS()
     print(f" ( Model size: {common.model_size(net)/1000:.0f}K parameters )")
 
     # initialization
@@ -133,7 +134,14 @@ if __name__ == '__main__':
     # create losses
     loss = args.loss.replace('`sampler`',args.sampler).replace('`N`',str(args.N))
     print("\n>> Creating loss = " + loss)
-    loss = eval(loss.replace('\n',''))
+    # loss = eval(loss.replace('\n',''))
+    sampler = NghSampler2(ngh=7, subq=-8, subd=1, pos_d=3, neg_d=5, border=16,
+                            subd_neg=-8,maxpool_pos=True)
+    loss = MultiLoss(
+        1, ReliabilityLoss(sampler, base=0.5, nq=20),
+        1, CosimLoss(N=args.N),
+        1, PeakyLoss(N=args.N))
+
     
     # create optimizer
     optimizer = optim.Adam( [p for p in net.parameters() if p.requires_grad], 
