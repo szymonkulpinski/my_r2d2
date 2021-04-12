@@ -5,6 +5,11 @@
 import os, pdb
 import torch
 import torch.optim as optim
+from torch.utils.tensorboard import SummaryWriter
+from pathlib import Path
+import time
+import sys
+
 
 from tools import common, trainer
 from tools.dataloader import *
@@ -60,10 +65,14 @@ class MyTrainer(trainer.Trainer):
     """ This class implements the network training.
         Below is the function I need to overload to explain how to do the backprop.
     """
-    def forward_backward(self, inputs):
+    def forward_backward(self, inputs, epoch):
         output = self.net(imgs=[inputs.pop('img1'),inputs.pop('img2')])
-        allvars = dict(inputs, **output)
-        loss, details = self.loss_func(**allvars)
+        allvars = dict(inputs, **output) # outputs : 2 losses, descriptor  and heat map(?)
+        loss, details = self.loss_func(**allvars) # allvars -> makes dictionary out of inputs and outputs
+        writer.add_scalar('training/total_loss', details['loss'], epoch)
+        writer.add_scalar('training/loss_reliability', details['loss_reliability'], epoch)
+        writer.add_scalar('training/loss_cosim16', details['loss_cosim16'], epoch)
+        writer.add_scalar('training/loss_peaky16', details['loss_peaky16'], epoch)
         if torch.is_grad_enabled(): loss.backward()
         return loss, details
 
@@ -100,6 +109,18 @@ if __name__ == '__main__':
     iscuda = common.torch_set_gpu(args.gpu)
     common.mkdir_for(args.save_path)
 
+    # create folder and path for summaryWriter
+    if sys.gettrace() is None: # not in debugging mode, to prevent creating a lot of folders when debuging
+        date_time = time.strftime("_%m_%d__%H_%M_%S")
+    else:
+        date_time = "_debug"
+
+    parent = Path(__file__).parent
+    path = parent / ("tensorboard" + date_time)
+    path.mkdir(exist_ok=True, parents=True)
+
+    writer = SummaryWriter(log_dir=str(path))
+
     # Create data loader
     from datasets import *
     db = [data_sources[key] for key in args.train_data]
@@ -135,6 +156,7 @@ if __name__ == '__main__':
     loss = args.loss.replace('`sampler`',args.sampler).replace('`N`',str(args.N))
     print("\n>> Creating loss = " + loss)
     # loss = eval(loss.replace('\n',''))
+    #TODO: will need to copy those
     sampler = NghSampler2(ngh=7, subq=-8, subd=1, pos_d=3, neg_d=5, border=16,
                             subd_neg=-8,maxpool_pos=True)
     loss = MultiLoss(
@@ -145,7 +167,7 @@ if __name__ == '__main__':
     
     # create optimizer
     optimizer = optim.Adam( [p for p in net.parameters() if p.requires_grad], 
-                            lr=args.learning_rate, weight_decay=args.weight_decay)
+                            lr=args.learning_rate, weight_decay=args.weight_decay) # UNDERSTAND: tutaj weights decay !
 
     train = MyTrainer(net, loader, loss, optimizer)
     if iscuda: train = train.cuda()
@@ -153,9 +175,10 @@ if __name__ == '__main__':
     # Training loop #
     for epoch in range(args.epochs):
         print(f"\n>> Starting epoch {epoch}...")
-        train()
+        train(epoch)
 
     print(f"\n>> Saving model to {args.save_path}")
     torch.save({'net': args.net, 'state_dict': net.state_dict()}, args.save_path)
+    writer.close()
 
 

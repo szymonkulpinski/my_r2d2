@@ -40,9 +40,9 @@ class Trainer (nn.Module):
         else:
             return x.cpu()
 
-    def __call__(self):
+    def __call__(self, epoch):
         self.net.train()
-        
+        # UNDERSTAND: where actual training happens!
         stats = defaultdict(list)
         
         for iter,inputs in enumerate(tqdm(self.loader)):
@@ -51,13 +51,13 @@ class Trainer (nn.Module):
             # compute gradient and do model update
             self.optimizer.zero_grad()
             
-            loss, details = self.forward_backward(inputs)
+            loss, details = self.forward_backward(inputs,epoch)
             if torch.isnan(loss):
                 raise RuntimeError('Loss is NaN')
             
             self.optimizer.step()
             
-            for key, val in details.items():
+            for key, val in details.items(): # get info from detials
                 stats[key].append( val )
         
         print(" Summary of losses during this epoch:")
@@ -68,7 +68,7 @@ class Trainer (nn.Module):
             print(f" {mean(vals[:N]):.3f} --> {mean(vals[-N:]):.3f} (avg: {mean(vals):.3f})")
         return mean(stats['loss']) # return average loss
 
-    def forward_backward(self, inputs):
+    def forward_backward(self, inputs, epoch):
         raise NotImplementedError()
 
 
