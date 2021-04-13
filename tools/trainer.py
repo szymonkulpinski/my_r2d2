@@ -26,6 +26,7 @@ class Trainer (nn.Module):
         self.loss_func = loss
         self.optimizer = optimizer
         self.epoch_previous = -1
+        self.iter_max = 0
 
     def iscuda(self):
         return next(self.net.parameters()).device != torch.device('cpu')

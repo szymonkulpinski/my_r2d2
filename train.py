@@ -70,10 +70,17 @@ class MyTrainer(trainer.Trainer):
         output = self.net(imgs=[inputs['img1'], inputs['img2']])
         allvars = dict(inputs, **output) # outputs : 2 losses, descriptor  and heat map(?)
         loss, details = self.loss_func(**allvars) # allvars -> makes dictionary out of inputs and outputs
-        writer.add_scalar('training/total_loss', details['loss'], iter)
-        writer.add_scalar('training/loss_reliability', details['loss_reliability'], iter)
-        writer.add_scalar('training/loss_cosim16', details['loss_cosim16'], iter)
-        writer.add_scalar('training/loss_peaky16', details['loss_peaky16'], iter)
+
+        if iter > self.iter_max:
+            self.iter_max = iter
+        # if epoch == 0:
+        #     actual_iter = iter
+        # else:
+        actual_iter = self.iter_max * epoch + iter
+        writer.add_scalar('training/total_loss', details['loss'], actual_iter)
+        writer.add_scalar('training/loss_reliability', details['loss_reliability'], actual_iter)
+        writer.add_scalar('training/loss_cosim16', details['loss_cosim16'], actual_iter)
+        writer.add_scalar('training/loss_peaky16', details['loss_peaky16'], actual_iter)
         if epoch != self.epoch_previous:
             tensorboard_tools.add_images_tensorboard(output, writer, 'r2d2', epoch)  # only once an epoch execute
             self.epoch_previous = epoch
