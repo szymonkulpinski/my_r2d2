@@ -25,6 +25,7 @@ class Trainer (nn.Module):
         self.loader = loader
         self.loss_func = loss
         self.optimizer = optimizer
+        self.epoch_previous = -1
 
     def iscuda(self):
         return next(self.net.parameters()).device != torch.device('cpu')
@@ -51,7 +52,7 @@ class Trainer (nn.Module):
             # compute gradient and do model update
             self.optimizer.zero_grad()
             
-            loss, details = self.forward_backward(inputs,epoch)
+            loss, details = self.forward_backward(inputs, epoch, iter)
             if torch.isnan(loss):
                 raise RuntimeError('Loss is NaN')
             
@@ -68,7 +69,7 @@ class Trainer (nn.Module):
             print(f" {mean(vals[:N]):.3f} --> {mean(vals[-N:]):.3f} (avg: {mean(vals):.3f})")
         return mean(stats['loss']) # return average loss
 
-    def forward_backward(self, inputs, epoch):
+    def forward_backward(self, inputs, epoch, iter):
         raise NotImplementedError()
 
 

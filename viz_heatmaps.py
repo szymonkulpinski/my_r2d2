@@ -6,6 +6,8 @@ import tqdm
 import numpy as np
 import torch
 
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
 from PIL import Image
 from matplotlib import pyplot as pl; pl.ion()
 from scipy.ndimage import uniform_filter
@@ -68,9 +70,11 @@ if __name__ == '__main__':
     with torch.no_grad():
         print(">> computing features...")
         res = net(imgs=[norm_RGB(img).unsqueeze(0).to(device)])
-        rela = res.get('reliability')
+        rela = res.get('reliability') # UNDERSTAND: how to get the stuff!
+        rela_viz = res.get('reliability')[0][0].cpu().detach().numpy()
         repe = res.get('repeatability')
-        kpts = detector(**res).T[:,[1,0]]
+        kpts_untr = detector(**res)
+        kpts = kpts_untr.T[:, [1, 0]]
         kpts = kpts[repe[0][0,0][kpts[:,1],kpts[:,0]].argsort()[-args.max_kpts:]]
 
     fig = pl.figure("viz")
@@ -117,6 +121,18 @@ if __name__ == '__main__':
 
     pl.gcf().set_size_inches(9, 2.73)
     pl.subplots_adjust(0.01,0.01,0.99,0.99,hspace=0.1)
+    # pl.show()
     pl.savefig(args.out)
-    pdb.set_trace()
+
+    canvas = FigureCanvas(fig)
+    canvas.draw()  # draw the canvas, cache the renderer
+
+    width, height = fig.get_size_inches() * fig.get_dpi()
+    width = int(width)
+    height = int(height)
+    img = np.fromstring(canvas.tostring_rgb(), dtype='uint8').reshape(height, width, 3)
+    # image = np.fromstring(canvas.tostring_rgb(), dtype='uint8')
+    print("test")
+
+    # pdb.set_trace()
 
