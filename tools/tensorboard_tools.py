@@ -23,7 +23,7 @@ def add_images_tensorboard(pred, writer, model_name, epoch):
 
         new_pred = get_one_batch(pred)
         writer.add_image("visual", get_image_without_keypoints(new_pred), epoch)
-        writer.close()
+        # writer.close()
     return
 
 def get_one_batch(pred):
@@ -86,5 +86,5 @@ def get_image_without_keypoints(pred):
     width = int(width)
     height = int(height)
     output_img = np.fromstring(canvas.tostring_rgb(), dtype='uint8').reshape(height, width, 3)
-
-    return torch.tensor(output_img.transpose(2, 0, 1), dtype=torch.float)
+    correct_colors_image = output_img[:, :, ::-1].copy()
+    return torch.tensor(correct_colors_image.transpose(2, 0, 1), dtype=torch.float)

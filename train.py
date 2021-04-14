@@ -159,7 +159,7 @@ if __name__ == '__main__':
     print(f" ( Model size: {common.model_size(net)/1000:.0f}K parameters )")
 
     # initialization
-    if args.pretrained:
+    if args.pretrained: # not used
         checkpoint = torch.load(args.pretrained, lambda a,b:a)
         net.load_pretrained(checkpoint['state_dict'])
         
