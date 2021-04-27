@@ -7,6 +7,9 @@ import os, pdb
 from PIL import Image
 import numpy as np
 import torch
+import torchvision.transforms as tvf
+import cv2
+
 
 from tools import common
 from tools.dataloader import norm_RGB
@@ -128,10 +131,20 @@ def extract_keypoints(args):
             continue
         
         print(f"\nExtracting features for {img_path}")
-        img = Image.open(img_path).convert('RGB')
-        W, H = img.size
-        img = norm_RGB(img)[None] 
+
+        img1 = Image.open(img_path).convert('RGB')
+        W, H = img1.size
+        if args.mean_rgb:
+            img = norm_RGB(img1)[None]
+        else:
+            img0 = np.array(img1)
+            img0 = cv2.cvtColor(img0, cv2.COLOR_RGB2BGR)
+            img0 = img0.astype(float) / 255.
+            img0 = torch.tensor(img0.transpose(2, 0, 1), dtype=torch.float)  # it should have [N, C, W, H] format
+            img = img0.unsqueeze(0)
+
         if iscuda: img = img.cuda()
+
         
         # extract keypoints/descriptors for a single image
         xys, desc, scores = extract_multiscale(net, img, detector,
@@ -177,6 +190,7 @@ if __name__ == '__main__':
     parser.add_argument("--repeatability-thr", type=float, default=0.7)
 
     parser.add_argument("--gpu", type=int, nargs='+', default=[0], help='use -1 for CPU')
+    parser.add_argument('--mean_rgb', action='store_true')
     args = parser.parse_args()
 
     extract_keypoints(args)
